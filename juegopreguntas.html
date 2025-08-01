@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Quiz de Copilot</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: #f5f7fa;
+      font-family: 'Poppins', sans-serif;
+    }
+    .container {
+      background: #fff;
+      padding: 30px 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+    }
+    .hide {
+      display: none;
+    }
+    h2 {
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #333;
+    }
+    #timer {
+      font-size: 1rem;
+      margin-bottom: 15px;
+      color: #555;
+    }
+    #question {
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+      color: #222;
+    }
+    .btn {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 12px 0;
+      border: none;
+      border-radius: 5px;
+      background: #4e73df;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background: #3751a3;
+    }
+    input, button#start-btn, button#restart-btn {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+    button#start-btn, button#restart-btn {
+      background: #4e73df;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button#start-btn:hover, button#restart-btn:hover {
+      background: #3751a3;
+    }
+    #score {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Pantalla de inicio -->
+    <div id="start-screen">
+      <h2>Bienvenido al Quiz de Copilot</h2>
+      <input type="text" id="name-input" placeholder="Ingresa tu nombre" />
+      <button id="start-btn">Iniciar Quiz</button>
+    </div>
+
+    <!-- Pantalla del cuestionario -->
+    <div id="quiz-screen" class="hide">
+      <div id="timer">Tiempo restante: <span id="time">10</span> seg</div>
+      <div id="question"></div>
+      <div id="options"></div>
+    </div>
+
+    <!-- Pantalla de resultados -->
+    <div id="result-screen" class="hide">
+      <h2>¡Quiz finalizado!</h2>
+      <p id="score"></p>
+      <button id="restart-btn">Volver a jugar</button>
+    </div>
+  </div>
+
+  <script>
+    // Elementos del DOM
+    const startScreen = document.getElementById('start-screen');
+    const quizScreen  = document.getElementById('quiz-screen');
+    const resultScreen= document.getElementById('result-screen');
+    const startBtn    = document.getElementById('start-btn');
+    const restartBtn  = document.getElementById('restart-btn');
+    const nameInput   = document.getElementById('name-input');
+    const questionEl  = document.getElementById('question');
+    const optionsEl   = document.getElementById('options');
+    const timerEl     = document.getElementById('time');
+    const scoreEl     = document.getElementById('score');
+
+    // Variables de estado
+    let userName = '';
+    let currentQuestion = 0;
+    let score = 0;
+    let timeLeft = 10;
+    let timer;
+
+    // Banco de preguntas
+    const questions = [
+      {
+        question: '¿Qué es Copilot?',
+        options: [
+          'Un asistente de IA para desarrollo y productividad',
+          'Un sistema de gestión de bases de datos',
+          'Un editor de imágenes',
+          'Un servidor web'
+        ],
+        answer: 0
+      },
+      {
+        question: '¿En qué editor de código se integra principalmente GitHub Copilot?',
+        options: [
+          'Visual Studio Code',
+          'Sublime Text',
+          'Atom',
+          'Notepad++'
+        ],
+        answer: 0
+      },
+      {
+        question: '¿Qué modelo de OpenAI utiliza Copilot para generar código?',
+        options: [
+          'GPT-2',
+          'Codex',
+          'DALL·E',
+          'CLIP'
+        ],
+        answer: 1
+      },
+      {
+        question: '¿Cuál de estos formatos de archivo puede ayudar Copilot a completar?',
+        options: [
+          '.py (Python)',
+          '.js (JavaScript)',
+          '.html (HyperText Markup Language)',
+          'Todas las anteriores'
+        ],
+        answer: 3
+      },
+      {
+        question: '¿Qué funcionalidad ofrece Copilot además de sugerir código?',
+        options: [
+          'Generar pruebas unitarias',
+          'Redactar documentación',
+          'Formular descripciones de funciones',
+          'Todas las anteriores'
+        ],
+        answer: 3
+      },
+      {
+        question: '¿Cómo se activa manualmente una sugerencia de Copilot en VS Code?',
+        options: [
+          'Con la tecla Tab',
+          'Con la tecla Ctrl+C',
+          'Con la tecla Alt+F4',
+          'Con la tecla Shift+Enter'
+        ],
+        answer: 0
+      },
+      {
+        question: '¿Cuál es el modelo de suscripción de GitHub Copilot?',
+        options: [
+          'Pago por uso',
+          'Suscripción mensual/anual',
+          'Compra única',
+          'Gratuito'
+        ],
+        answer: 1
+      },
+      {
+        question: '¿En qué servicio de Microsoft se integra Copilot para productividad general?',
+        options: [
+          'Microsoft Excel',
+          'Microsoft Teams',
+          'Microsoft 365 (incluye Word, Excel, etc.)',
+          'Microsoft Windows'
+        ],
+        answer: 2
+      },
+      {
+        question: '¿Cuál es la principal fuente de datos entrenada para Copilot?',
+        options: [
+          'Código público de GitHub',
+          'Datos privados de empresas',
+          'Internet de forma indiscriminada',
+          'Bases de datos de imágenes'
+        ],
+        answer: 0
+      },
+      {
+        question: '¿Qué debes hacer si Copilot genera una sugerencia incorrecta o insegura?',
+        options: [
+          'Ignorarla y escribir tu propio código',
+          'Reportarla como feedback',
+          'Validar y revisar siempre la sugerencia',
+          'Todas las anteriores'
+        ],
+        answer: 3
+      }
+    ];
+
+    // Inicia el quiz
+    function startQuiz() {
+      userName = nameInput.value.trim() || 'Usuario';
+      startScreen.classList.add('hide');
+      quizScreen.classList.remove('hide');
+      currentQuestion = 0;
+      score = 0;
+      showQuestion();
+    }
+
+    // Muestra una pregunta
+    function showQuestion() {
+      resetState();
+      timeLeft = 10;
+      timerEl.textContent = timeLeft;
+      timer = setInterval(countdown, 1000);
+
+      const q = questions[currentQuestion];
+      questionEl.textContent = `${userName}, ${q.question}`;
+
+      q.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = option;
+        btn.classList.add('btn');
+        btn.addEventListener('click', () => selectAnswer(index));
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    // Limpia el estado previo
+    function resetState() {
+      clearInterval(timer);
+      optionsEl.innerHTML = '';
+    }
+
+    // Cuenta regresiva
+    function countdown() {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        nextQuestion();
+      }
+    }
+
+    // Selección de respuesta
+    function selectAnswer(selected) {
+      clearInterval(timer);
+      if (selected === questions[currentQuestion].answer) {
+        score += 10;
+      }
+      nextQuestion();
+    }
+
+    // Avanza o muestra resultados
+    function nextQuestion() {
+      currentQuestion++;
+      if (currentQuestion < questions.length) {
+        showQuestion();
+      } else {
+        showResult();
+      }
+    }
+
+    // Pantalla de resultados
+    function showResult() {
+      quizScreen.classList.add('hide');
+      resultScreen.classList.remove('hide');
+      scoreEl.textContent = `${userName}, obtuviste ${score}% de puntuación.`;
+    }
+
+    // Event listeners
+    startBtn.addEventListener('click', startQuiz);
+    restartBtn.addEventListener('click', () => {
+      resultScreen.classList.add('hide');
+      startScreen.classList.remove('hide');
+      nameInput.value = '';
+    });
+  </script>
+</body>
+</html>
